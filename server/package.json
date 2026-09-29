@@ -1,0 +1,18 @@
+{
+  "name": "sahmy-server",
+  "version": "1.0.0",
+  "description": "Proxy server for EGX data using Playwright",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "install-browsers": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.1",
+    "node-cache": "^5.1.2",
+    "playwright": "^1.48.0"
+  }
+}

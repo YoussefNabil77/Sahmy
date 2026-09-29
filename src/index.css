@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --accent: 16 185 129; /* emerald-500 */
+    --accent-dark: 5 150 105; /* emerald-600 */
+    --surface-bg: 248 250 252;
+    --surface-card: 255 255 255;
+    --surface-border: 226 232 240;
+    --text-primary: 15 23 42;
+    --text-secondary: 100 116 139;
+    --up: 16 185 129;
+    --down: 239 68 68;
+  }
+
+  .dark {
+    --surface-bg: 9 17 38;
+    --surface-card: 15 27 55;
+    --surface-border: 30 47 80;
+    --text-primary: 241 245 249;
+    --text-secondary: 148 163 184;
+  }
+
+  html {
+    direction: rtl;
+    font-family: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: rgb(var(--surface-bg));
+    color: rgb(var(--text-primary));
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .card {
+    background-color: rgb(var(--surface-card));
+    border: 1px solid rgb(var(--surface-border));
+    border-radius: 1rem;
+    padding: 1.25rem;
+  }
+
+  .card-glass {
+    background: rgba(var(--surface-card), 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(var(--surface-border), 0.6);
+    border-radius: 1rem;
+  }
+
+  .btn-primary {
+    background-color: rgb(var(--accent));
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: opacity 0.15s;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .text-up {
+    color: rgb(var(--up));
+  }
+
+  .text-down {
+    color: rgb(var(--down));
+  }
+
+  .badge-mock {
+    font-size: 0.6rem;
+    background: rgba(251, 191, 36, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+    vertical-align: middle;
+  }
+}
