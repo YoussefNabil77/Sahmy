@@ -1,18 +1,16 @@
 {
   "name": "sahmy-server",
-  "version": "1.0.0",
-  "description": "Proxy server for EGX data using Playwright",
+  "version": "2.0.0",
+  "description": "EGX proxy server using Yahoo Finance API — no browser needed",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "install-browsers": "npx playwright install chromium"
+    "start": "node index.js"
   },
   "dependencies": {
-    "cheerio": "^1.0.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "express-rate-limit": "^7.4.1",
     "node-cache": "^5.1.2",
-    "playwright": "^1.48.0"
+    "yahoo-finance2": "^2.11.3"
   }
 }
