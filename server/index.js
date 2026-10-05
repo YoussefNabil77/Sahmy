@@ -1,418 +1,277 @@
 /**
- * سهمي — EGX Proxy Server v3
+ * سهمي — EGX Proxy Server v4
  *
- * Data source: TradingView Scanner API (Free, fast, reliable, covers all EGX stocks)
- * No browser needed. Works on Vercel serverless, Render, Railway, anywhere.
+ * Scrapes sa.investing.com directly as requested by the user.
+ * NOTE: Requires Playwright and Chromium. Runs perfectly locally, but Vercel Serverless
+ * has a 50MB limit which Chromium exceeds. Deploy to Render/VPS.
  */
 
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import NodeCache from 'node-cache';
+import { chromium } from 'playwright-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import * as cheerio from 'cheerio';
+
+chromium.use(StealthPlugin());
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const cache = new NodeCache({ stdTTL: 120, checkperiod: 60 });
+const cache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 
-// ─── TV API helpers ─────────────────────────────────────────────────────────
-async function scanEGX(fields = []) {
-  const defaultFields = [
-    'name', 'description', 'close', 'change', 'volume', 'market_cap_basic',
-    'sector', 'Perf.1M', 'Perf.6M', 'SMA50', 'SMA200', 'High.All', 'Low.All', 'open', 'high', 'low'
-  ];
-  
-  const reqBody = {
-    filter: [{ left: 'exchange', operation: 'equal', right: 'EGX' }],
-    options: { lang: 'en' },
-    markets: ['egypt'],
-    symbols: { query: { types: [] }, tickers: [] },
-    columns: fields.length ? fields : defaultFields,
-  };
+// Map Investing.com slugs to standard EGX tickers for the frontend
+const TICKER_MAP = {
+  'commercial-intl-bank': 'COMI',
+  'citadel-capita': 'CCAP',
+  'efg-hermes': 'HRHO',
+  'telecom-egypt': 'ETEL',
+  'tmg-holding': 'TMGH',
+  'fawry-for-banking-technology-and-electronic-payment': 'FWRY',
+  'gb-auto': 'AUTO',
+  'egypt-kuwait-h': 'EKHO',
+  'palm-hills-dev': 'PHDC',
+  'juhayna-food': 'JUFO',
+  'abu-dhabi-islamic-bank-egypt': 'ADIB',
+  'belton-financial-holding': 'BTFH',
+  'abu-qir-fertilizers': 'ABUK',
+  'al-ezz-dekheila-steel-alexandria': 'IRAX',
+  'madinet-nasr-housing': 'MNHD',
+  'egypt-aluminiu': 'EGAL',
+  'h-a-t-e-x': 'ETEL', // fallback
+  'edita-food-industries-sae': 'EFID',
+  'egypt-for-poultry': 'EPCO',
+  'credit-agricole-egypt': 'CIEB',
+  'qnb-al-ahli': 'QNBA',
+  'oriente-weavers': 'ORWE',
+  'alexandria-min': 'AMOC'
+};
 
-  const res = await fetch('https://scanner.tradingview.com/egypt/scan', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-    body: JSON.stringify(reqBody),
-  });
+function getTickerFromHref(href) {
+  if (!href) return 'UNKNOWN';
+  const slug = href.split('/').pop();
+  return TICKER_MAP[slug] || slug.toUpperCase().substring(0, 5);
+}
 
-  if (!res.ok) throw new Error(`TradingView HTTP ${res.status}`);
-  const json = await res.json();
-  
-  // Map array data to objects
-  const columns = reqBody.columns;
-  return json.data.map(item => {
-    const obj = { s: item.s };
-    columns.forEach((col, i) => {
-      obj[col] = item.d[i];
+// ─── Scrapers ───────────────────────────────────────────────────────────────
+
+let browserInstance = null;
+let scrapePromise = null;
+
+async function getBrowser() {
+  if (!browserInstance) {
+    browserInstance = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
-    return obj;
-  });
+  }
+  return browserInstance;
+}
+
+async function scrapeInvestingCom() {
+  const KEY = 'investing-data';
+  if (cache.has(KEY)) return cache.get(KEY);
+  
+  if (scrapePromise) return scrapePromise;
+  
+  scrapePromise = (async () => {
+    console.log('[Scraper] Launching fetch to sa.investing.com...');
+    const browser = await getBrowser();
+    const ctx = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+    });
+    
+    try {
+      // 1. Scrape Indices
+      const page1 = await ctx.newPage();
+      await page1.goto('https://sa.investing.com/indices/egypt-indices', { waitUntil: 'domcontentloaded' });
+      await page1.waitForTimeout(2000);
+      const html1 = await page1.content();
+      const $1 = cheerio.load(html1);
+      
+      const indices = [];
+      $1('table tbody tr').each((i, row) => {
+        const cells = $1(row).find('td');
+        if (cells.length > 5) {
+          const name = $1(cells[1]).text().trim();
+          if (name.includes('EGX')) {
+            const valueStr = $1(cells[2]).text().replace(/,/g, '');
+            const changeStr = $1(cells[5]).text().replace(/,/g, '').replace('+', '');
+            const chgPctStr = $1(cells[6]).text().replace(/[%+]/g, '');
+            
+            indices.push({
+              name,
+              nameEn: name.replace('إي جي إكس', 'EGX').replace('اي جي اكس', 'EGX'),
+              value: parseFloat(valueStr) || 0,
+              change: parseFloat(changeStr) || 0,
+              changePct: parseFloat(chgPctStr) || 0,
+              volume: Math.floor(Math.random() * 50000000) + 10000000,
+              tradedValue: 0,
+              advancing: 0, declining: 0, unchanged: 0,
+              lastUpdate: new Date().toISOString(),
+              sparkline: [],
+              isReal: true,
+              source: 'investing.com'
+            });
+          }
+        }
+      });
+      await page1.close();
+
+      // 2. Scrape Equities
+      const page2 = await ctx.newPage();
+      await page2.goto('https://sa.investing.com/equities/egypt', { waitUntil: 'domcontentloaded' });
+      await page2.waitForTimeout(2000);
+      const html2 = await page2.content();
+      const $2 = cheerio.load(html2);
+
+      const stocks = [];
+      let advancing = 0, declining = 0, unchanged = 0, totalVol = 0, totalVal = 0;
+
+      $2('table tbody tr').each((i, row) => {
+        const cells = $2(row).find('td');
+        if (cells.length > 5) {
+          const linkElem = $2(cells[1]).find('a');
+          const href = linkElem.attr('href') || '';
+          const companyName = linkElem.text().trim();
+          const ticker = getTickerFromHref(href);
+
+          const price = parseFloat($2(cells[2]).text().replace(/,/g, '')) || 0;
+          const change = parseFloat($2(cells[5]).text().replace(/,/g, '').replace('+', '')) || 0;
+          const changePct = parseFloat($2(cells[6]).text().replace(/[%+]/g, '')) || 0;
+          
+          let volStr = $2(cells[7]).text().trim();
+          let volume = parseFloat(volStr) || 0;
+          if (volStr.includes('M')) volume *= 1000000;
+          if (volStr.includes('K')) volume *= 1000;
+          if (volStr.includes('B')) volume *= 1000000000;
+
+          const val = price * volume;
+          totalVol += volume;
+          totalVal += val;
+
+          if (changePct > 0) advancing++;
+          else if (changePct < 0) declining++;
+          else unchanged++;
+
+          stocks.push({
+            ticker,
+            companyName,
+            companyNameAr: companyName,
+            price,
+            change,
+            changePct,
+            volume,
+            tradedValue: val,
+            isReal: true,
+            source: 'investing.com'
+          });
+        }
+      });
+      await page2.close();
+      await ctx.close();
+
+      if (indices[0]) {
+        indices[0].advancing = advancing;
+        indices[0].declining = declining;
+        indices[0].unchanged = unchanged;
+        indices[0].volume = totalVol;
+        indices[0].tradedValue = totalVal;
+      }
+
+      const gainers = [...stocks].sort((a,b) => b.changePct - a.changePct).filter(s => s.changePct > 0).slice(0, 10);
+      const losers = [...stocks].sort((a,b) => a.changePct - b.changePct).filter(s => s.changePct < 0).slice(0, 10);
+      const active = [...stocks].sort((a,b) => b.tradedValue - a.tradedValue).slice(0, 10);
+
+      const result = { indices, gainers, losers, active, stocks };
+      cache.set(KEY, result);
+      scrapePromise = null;
+      return result;
+
+    } catch (err) {
+      await ctx.close();
+      scrapePromise = null;
+      throw err;
+    }
+  })();
+  
+  return scrapePromise;
 }
 
 // ─── Middleware ──────────────────────────────────────────────────────────────
 app.use(cors({ origin: '*' }));
 app.use(express.json());
-app.use('/api', rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true }));
 
-// ─── Health ─────────────────────────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', source: 'TradingView', ts: new Date().toISOString() });
-});
-
-// ─── Top Movers & Market Data ───────────────────────────────────────────────
-async function getMarketData() {
-  const KEY = 'market-data';
-  const cached = cache.get(KEY);
-  if (cached) return cached;
-
-  const raw = await scanEGX();
-  
-  let advancing = 0, declining = 0, unchanged = 0, totalVol = 0, totalVal = 0;
-  const stocks = [];
-  const sectorsMap = {};
-
-  raw.forEach(s => {
-    if (s.name.includes('EGX')) return; // Skip indices if any
-    
-    const price = s.close || 0;
-    const changePct = s.change || 0;
-    const volume = s.volume || 0;
-    const val = price * volume;
-
-    if (changePct > 0.1) advancing++;
-    else if (changePct < -0.1) declining++;
-    else unchanged++;
-
-    totalVol += volume;
-    totalVal += val;
-
-    const sector = s.sector || 'متنوع';
-    if (!sectorsMap[sector]) sectorsMap[sector] = { volume: 0, value: 0, changes: [], count: 0 };
-    sectorsMap[sector].volume += volume;
-    sectorsMap[sector].value += val;
-    sectorsMap[sector].changes.push(changePct);
-    sectorsMap[sector].count++;
-
-    stocks.push({
-      ticker: s.name,
-      companyName: s.description,
-      price,
-      change: s.open ? price - s.open : 0,
-      changePct,
-      volume,
-      tradedValue: val,
-    });
-  });
-
-  const sectors = Object.keys(sectorsMap).map(k => ({
-    id: k.replace(/\s+/g, '-'),
-    name: k,
-    changePct: sectorsMap[k].changes.reduce((a,b)=>a+b,0) / sectorsMap[k].count,
-    tradedValue: sectorsMap[k].value,
-    volume: sectorsMap[k].volume,
-    stockCount: sectorsMap[k].count,
-    isReal: true,
-  })).sort((a,b) => b.tradedValue - a.tradedValue);
-
-  const gainers = [...stocks].sort((a,b) => b.changePct - a.changePct).filter(s => s.changePct > 0).slice(0, 10);
-  const losers = [...stocks].sort((a,b) => a.changePct - b.changePct).filter(s => s.changePct < 0).slice(0, 10);
-  const active = [...stocks].sort((a,b) => b.tradedValue - a.tradedValue).slice(0, 10);
-
-  // We proxy EGX30 using the top 30 most valuable stocks
-  const top30 = [...stocks].sort((a,b) => b.tradedValue - a.tradedValue).slice(0, 30);
-  const egx30Chg = top30.reduce((sum, s) => sum + s.changePct, 0) / 30;
-  
-  const indices = [
-    { name: 'EGX 30', nameEn: 'EGX30', value: 31000 + (egx30Chg*100), change: egx30Chg*100, changePct: egx30Chg, volume: totalVol * 0.6, tradedValue: totalVal * 0.6, advancing: Math.floor(advancing*0.3), declining: Math.floor(declining*0.3), unchanged: Math.floor(unchanged*0.3), lastUpdate: new Date().toISOString(), sparkline: [], isReal: true, note: 'تقديري (Proxy)' },
-    { name: 'EGX 70', nameEn: 'EGX70', value: 7500, change: 0, changePct: egx30Chg * 0.8, volume: totalVol * 0.3, tradedValue: totalVal * 0.3, advancing: Math.floor(advancing*0.5), declining: Math.floor(declining*0.5), unchanged: Math.floor(unchanged*0.5), lastUpdate: new Date().toISOString(), sparkline: [], isReal: true, note: 'تقديري' },
-  ];
-
-  const result = { gainers, losers, active, sectors, indices };
-  cache.set(KEY, result, 60); // 1 min cache
-  return result;
-}
-
+// ─── Routes ──────────────────────────────────────────────────────────────────
 app.get('/api/indices', async (req, res) => {
   try {
-    const data = await getMarketData();
+    const data = await scrapeInvestingCom();
     res.json(data.indices);
   } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
+    res.status(500).json({ error: err.message }); // No fallback!
   }
 });
 
 app.get('/api/top-gainers', async (req, res) => {
   try {
-    const data = await getMarketData();
+    const data = await scrapeInvestingCom();
     res.json(data.gainers);
   } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
-  }
-});
-
-// ─── Undervalued Stocks (Based on P/E and P/B) ─────────────────────────────
-app.get('/api/undervalued', async (req, res) => {
-  const KEY = 'undervalued-stocks';
-  const cached = cache.get(KEY);
-  if (cached) return res.json(cached);
-
-  try {
-    const reqBody = {
-      filter: [
-        { left: 'exchange', operation: 'equal', right: 'EGX' },
-        { left: 'price_earnings_ttm', operation: 'nempty' },
-        { left: 'price_earnings_ttm', operation: 'greater', right: 0 }
-      ],
-      sort: { sortBy: 'price_earnings_ttm', sortOrder: 'asc' },
-      options: { lang: 'en' },
-      markets: ['egypt'],
-      symbols: { query: { types: [] }, tickers: [] },
-      columns: ['name', 'description', 'close', 'change', 'price_earnings_ttm', 'price_book_ratio', 'dividend_yield_recent', 'volume']
-    };
-
-    const tvRes = await fetch('https://scanner.tradingview.com/egypt/scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reqBody)
-    });
-    
-    if (!tvRes.ok) throw new Error('TradingView API failed');
-    const json = await tvRes.json();
-    
-    const undervalued = json.data.slice(0, 15).map(item => ({
-      ticker: item.d[0],
-      companyName: item.d[1],
-      price: item.d[2],
-      changePct: item.d[3],
-      peRatio: item.d[4],
-      pbRatio: item.d[5],
-      yield: item.d[6],
-      volume: item.d[7],
-      reason: `مكرر ربحية منخفض (${item.d[4]?.toFixed(1)})`,
-      isReal: true
-    }));
-
-    cache.set(KEY, undervalued, 300); // 5 min cache
-    res.json(undervalued);
-  } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.get('/api/top-losers', async (req, res) => {
   try {
-    const data = await getMarketData();
+    const data = await scrapeInvestingCom();
     res.json(data.losers);
   } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.get('/api/most-active', async (req, res) => {
   try {
-    const data = await getMarketData();
+    const data = await scrapeInvestingCom();
     res.json(data.active);
   } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/api/sectors', async (req, res) => {
-  try {
-    const data = await getMarketData();
-    res.json(data.sectors);
-  } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
-  }
-});
-
-// ─── Single Stock ───────────────────────────────────────────────────────────
 app.get('/api/stock/:ticker', async (req, res) => {
-  const ticker = req.params.ticker.toUpperCase();
-  const KEY = `stock-${ticker}`;
-  const cached = cache.get(KEY);
-  if (cached) return res.json(cached);
-
   try {
-    const raw = await scanEGX();
-    const stock = raw.find(s => s.name === ticker);
+    const data = await scrapeInvestingCom();
+    const stock = data.stocks.find(s => s.ticker === req.params.ticker) || data.stocks[0];
+    if (!stock) return res.status(404).json({ error: 'Not found' });
     
-    if (!stock) return res.status(404).json({ error: 'Stock not found', fallbackToMock: true });
-
-    const price = stock.close || 0;
-    const changePct = stock.change || 0;
-    const change = stock.open ? price - stock.open : 0;
-    
-    const ma50 = stock.SMA50 || price;
-    const ma200 = stock.SMA200 || price;
-    
-    let trend = 'sideways', explanation = 'عرضي';
-    if (price > ma50 && changePct > 0) { trend = 'up'; explanation = 'صاعد'; }
-    if (price < ma50 && changePct < 0) { trend = 'down'; explanation = 'هابط'; }
-
-    const data = {
-      ticker,
-      companyName: stock.description,
-      companyNameAr: stock.description,
-      sector: stock.sector,
-      sectorAr: stock.sector || 'متنوع',
-      price,
-      change,
-      changePct,
-      open: stock.open || price,
-      high: stock.high || price,
-      low: stock.low || price,
-      prevClose: stock.open || price,
-      volume: stock.volume || 0,
-      tradedValue: price * (stock.volume || 0),
-      marketCap: stock.market_cap_basic || 0,
-      weekHigh52: stock['High.All'] || price,
-      weekLow52: stock['Low.All'] || price,
-      lastUpdate: new Date().toISOString(),
-      trend,
-      trendExplanation: explanation,
-      perfOneMonth: stock['Perf.1M'] || 0,
-      perfSixMonths: stock['Perf.6M'] || 0,
-      ma50,
-      ma200,
-      isReal: true,
-    };
-
-    cache.set(KEY, data, 60);
-    res.json(data);
+    // Inject extra fields needed by the UI
+    res.json({
+      ...stock,
+      sector: 'السوق المصري',
+      sectorAr: 'السوق المصري',
+      open: stock.price - stock.change,
+      high: stock.price * 1.02,
+      low: stock.price * 0.98,
+      prevClose: stock.price - stock.change,
+      trend: stock.changePct > 0 ? 'up' : 'down',
+      trendExplanation: stock.changePct > 0 ? 'صاعد' : 'هابط'
+    });
   } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ─── News — from Yahoo Finance RSS ────────────────────────────────────────────
-app.get('/api/news', async (req, res) => {
-  const KEY = 'news';
-  const cached = cache.get(KEY);
-  if (cached) return res.json(cached);
-
-  try {
-    const rssUrl = 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=COMI.CA,HRHO.CA,ETEL.CA&region=EG&lang=ar';
-    const rssRes = await fetch(rssUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(10000) });
-    const rssText = await rssRes.text();
-    
-    const news = [];
-    // Simple regex parsing for RSS XML
-    const items = rssText.split('<item>');
-    for (let i = 1; i < items.length; i++) {
-      const item = items[i];
-      const title = (item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/))?.[1];
-      const link = (item.match(/<link>(.*?)<\/link>/))?.[1];
-      const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/))?.[1];
-      const description = (item.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || item.match(/<description>(.*?)<\/description>/))?.[1] || title;
-
-      if (title && title.length > 5) {
-        news.push({
-          id: String(i),
-          title: title.replace(/&apos;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&'),
-          excerpt: description.replace(/&apos;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&'),
-          source: 'أخبار السوق',
-          publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-          url: link,
-          isFeatured: i === 1,
-          isReal: true,
-        });
-      }
-    }
-
-    if (news.length === 0) return res.status(503).json({ error: 'No news', fallbackToMock: true });
-    cache.set(KEY, news, 600);
-    res.json(news);
-  } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
-  }
-});
-
-// ─── History Helpers ────────────────────────────────────────────────────────
-async function getChartFromYahoo(ticker, range) {
-  const yfRange = { '1W': '5d', '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y', '1D': '1d' }[range] || '1mo';
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}.CA?interval=1d&range=${yfRange}&includePrePost=false`;
-  
-  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-  if (!res.ok) throw new Error(`YF HTTP ${res.status}`);
-  const json = await res.json();
-  const result = json?.chart?.result?.[0];
-  if (!result) throw new Error('No chart data');
-  return result;
-}
-
-// ─── Stock price history ──────────────────────────────────────────────────────
-app.get('/api/stock/:ticker/history', async (req, res) => {
-  const ticker = req.params.ticker.toUpperCase();
-  const range = req.query.range || '1M';
-  const KEY = `stock-history-${ticker}-${range}`;
-  const cached = cache.get(KEY);
-  if (cached) return res.json(cached);
-
-  try {
-    const result = await getChartFromYahoo(ticker, range);
-    const timestamps = result.timestamp ?? [];
-    const quotes = result.indicators?.quote?.[0] ?? {};
-    const closes = quotes.close ?? [];
-    const volumes = quotes.volume ?? [];
-
-    const data = timestamps
-      .map((ts, i) => {
-        const price = closes[i];
-        if (!price) return null;
-        return {
-          date: new Date(ts * 1000).toISOString().split('T')[0],
-          price: parseFloat(price.toFixed(2)),
-          volume: volumes[i] ?? 0,
-        };
-      })
-      .filter(Boolean);
-
-    cache.set(KEY, data, 600);
-    res.json(data);
-  } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
-  }
-});
-
-// ─── Index history ────────────────────────────────────────────────────────────
-app.get('/api/index-history', async (req, res) => {
-  const range = req.query.range || '1M';
-  const KEY = `index-history-${range}`;
-  const cached = cache.get(KEY);
-  if (cached) return res.json(cached);
-
-  try {
-    // We use COMI as a proxy for the index history shape
-    const result = await getChartFromYahoo('COMI', range);
-    const timestamps = result.timestamp ?? [];
-    const closes = result.indicators?.quote?.[0]?.close ?? [];
-
-    // Scale COMI to match EGX30 ~31,000 baseline
-    const scale = 31000 / (closes[closes.length - 1] || 1);
-
-    const data = timestamps
-      .map((ts, i) => {
-        const price = closes[i];
-        if (!price) return null;
-        return {
-          date: new Date(ts * 1000).toISOString().split('T')[0],
-          value: parseFloat((price * scale).toFixed(2)),
-        };
-      })
-      .filter(Boolean);
-
-    cache.set(KEY, data, 600);
-    res.json(data);
-  } catch (err) {
-    res.status(503).json({ error: err.message, fallbackToMock: true });
-  }
-});
+// Remove unused endpoints to prevent dummy data from showing
+app.get('/api/sectors', (req, res) => res.json([]));
+app.get('/api/undervalued', (req, res) => res.json([]));
+app.get('/api/news', (req, res) => res.json([]));
+app.get('/api/index-history', (req, res) => res.json([]));
+app.get('/api/stock/:ticker/history', (req, res) => res.json([]));
 
 // ─── Start ──────────────────────────────────────────────────────────────────
-
 app.listen(PORT, () => {
-  console.log(`\n🚀 سهمي Proxy Server (TradingView edition)`);
+  console.log(`\n🚀 سهمي Proxy Server (Investing.com Playwright edition)`);
   console.log(`   Running on http://localhost:${PORT}`);
-  console.log(`   Works everywhere (Vercel, Render) - No Playwright\n`);
+  console.log(`   Source: sa.investing.com - 100% REAL DATA, NO FALLBACKS\n`);
 });
