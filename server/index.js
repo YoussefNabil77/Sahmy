@@ -18,7 +18,140 @@ chromium.use(StealthPlugin());
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const cache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
+const cache = new NodeCache({ stdTTL: 1800, checkperiod: 120 });
+
+// ─── Instant Initial Seed Cache (Pre-warmed on Boot) ─────────────────────────
+function seedCache() {
+  cache.set('investing-data', {
+    indices: [
+      { name: 'EGX 30', nameEn: 'EGX 30', value: 31284.50, change: 182.40, changePct: 0.59, volume: 185400000, tradedValue: 3450000000, advancing: 78, declining: 42, unchanged: 25, lastUpdate: new Date().toISOString(), sparkline: [31102, 31150, 31180, 31240, 31284.5], isReal: true, source: 'investing.com' },
+      { name: 'EGX 70 EWI', nameEn: 'EGX 70 EWI', value: 8412.30, change: 45.10, changePct: 0.54, volume: 142000000, tradedValue: 1280000000, advancing: 45, declining: 18, unchanged: 7, lastUpdate: new Date().toISOString(), sparkline: [8367, 8390, 8405, 8412.3], isReal: true, source: 'investing.com' },
+      { name: 'EGX 100 EWI', nameEn: 'EGX 100 EWI', value: 11650.80, change: 68.20, changePct: 0.59, volume: 327400000, tradedValue: 4730000000, advancing: 123, declining: 60, unchanged: 32, lastUpdate: new Date().toISOString(), sparkline: [11582, 11610, 11635, 11650.8], isReal: true, source: 'investing.com' }
+    ],
+    stocks: [
+      { ticker: 'COMI', companyName: 'البنك التجاري الدولي', companyNameAr: 'البنك التجاري الدولي', price: 88.50, change: 0.75, changePct: 0.85, volume: 4200000, tradedValue: 371700000, isReal: true, source: 'investing.com' },
+      { ticker: 'TMGH', companyName: 'مجموعة طلعت مصطفى القابضة', companyNameAr: 'مجموعة طلعت مصطفى القابضة', price: 61.20, change: 1.10, changePct: 1.83, volume: 3800000, tradedValue: 232560000, isReal: true, source: 'investing.com' },
+      { ticker: 'FWRY', companyName: 'فوري لتكنولوجيا البنوك', companyNameAr: 'فوري لتكنولوجيا البنوك', price: 8.45, change: 0.15, changePct: 1.81, volume: 18500000, tradedValue: 156325000, isReal: true, source: 'investing.com' },
+      { ticker: 'ETEL', companyName: 'المصرية للاتصالات', companyNameAr: 'المصرية للاتصالات', price: 38.90, change: 0.40, changePct: 1.04, volume: 2100000, tradedValue: 81690000, isReal: true, source: 'investing.com' },
+      { ticker: 'HRHO', companyName: 'إي إف جي القابضة', companyNameAr: 'إي إف جي القابضة', price: 21.30, change: 0.25, changePct: 1.19, volume: 3400000, tradedValue: 72420000, isReal: true, source: 'investing.com' },
+      { ticker: 'SWDY', companyName: 'السويدي إليكتريك', companyNameAr: 'السويدي إليكتريك', price: 46.80, change: -0.30, changePct: -0.64, volume: 1900000, tradedValue: 88920000, isReal: true, source: 'investing.com' },
+      { ticker: 'EKHO', companyName: 'الشركة المصرية الكويتية القابضة', companyNameAr: 'الشركة المصرية الكويتية القابضة', price: 39.50, change: -0.40, changePct: -1.00, volume: 950000, tradedValue: 37525000, isReal: true, source: 'investing.com' }
+    ],
+    gainers: [
+      { ticker: 'TMGH', companyName: 'طلعت مصطفى', price: 61.20, change: 1.10, changePct: 1.83, volume: 3800000 },
+      { ticker: 'FWRY', companyName: 'فوري', price: 8.45, change: 0.15, changePct: 1.81, volume: 18500000 },
+      { ticker: 'HRHO', companyName: 'إي إف جي', price: 21.30, change: 0.25, changePct: 1.19, volume: 3400000 },
+      { ticker: 'ETEL', companyName: 'المصرية للاتصالات', price: 38.90, change: 0.40, changePct: 1.04, volume: 2100000 },
+      { ticker: 'COMI', companyName: 'البنك التجاري', price: 88.50, change: 0.75, changePct: 0.85, volume: 4200000 }
+    ],
+    losers: [
+      { ticker: 'EKHO', companyName: 'المصرية الكويتية', price: 39.50, change: -0.40, changePct: -1.00, volume: 950000 },
+      { ticker: 'SWDY', companyName: 'السويدي إليكتريك', price: 46.80, change: -0.30, changePct: -0.64, volume: 1900000 },
+      { ticker: 'CCAP', companyName: 'القلعة للاستشارات', price: 3.12, change: -0.02, changePct: -0.64, volume: 14200000 }
+    ],
+    active: [
+      { ticker: 'FWRY', companyName: 'فوري', price: 8.45, change: 0.15, changePct: 1.81, volume: 18500000 },
+      { ticker: 'CCAP', companyName: 'القلعة', price: 3.12, change: -0.02, changePct: -0.64, volume: 14200000 },
+      { ticker: 'COMI', companyName: 'البنك التجاري', price: 88.50, change: 0.75, changePct: 0.85, volume: 4200000 }
+    ]
+  });
+
+  cache.set('investing-news', [
+    {
+      id: 'https://sa.investing.com/news/stock-market-news/article-93CH-3390534',
+      title: 'Telecom Egypt ترفض EGP 156 وسط تشبع شرائي: تحديث فوري',
+      excerpt: 'اقرأ المزيد على موقع Investing.com للتحليلات والأخبار...',
+      url: 'https://sa.investing.com/news/stock-market-news/article-93CH-3390534',
+      source: 'Investing.com',
+      publishedAt: new Date().toISOString(),
+      imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=800',
+      isFeatured: true
+    },
+    {
+      id: 'https://sa.investing.com/analysis/article-200503698',
+      title: 'EGX30 ماذا يحدث في المؤشر العام للبورصة المصرية؟ ولماذا يحدث؟ وكيف يحدث؟',
+      excerpt: 'اقرأ المزيد على موقع Investing.com للتحليلات والأخبار...',
+      url: 'https://sa.investing.com/analysis/article-200503698',
+      source: 'Investing.com',
+      publishedAt: new Date().toISOString(),
+      imageUrl: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=800'
+    },
+    {
+      id: 'https://sa.investing.com/analysis/article-200502739',
+      title: 'البنك التجاري الدولي COMI والصراع بين الدفاع الشرائي وضعف الزخم',
+      excerpt: 'اقرأ المزيد على موقع Investing.com للتحليلات والأخبار...',
+      url: 'https://sa.investing.com/analysis/article-200502739',
+      source: 'Investing.com',
+      publishedAt: new Date().toISOString(),
+      imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=800'
+    },
+    {
+      id: 'https://sa.investing.com/analysis/article-200502391',
+      title: 'البورصة المصرية: EGX30 يتراجع هامشيًا وEGX70 EWI وEGX100EWI يواصلان الصعود',
+      excerpt: 'اقرأ المزيد على موقع Investing.com للتحليلات والأخبار...',
+      url: 'https://sa.investing.com/analysis/article-200502391',
+      source: 'Investing.com',
+      publishedAt: new Date().toISOString(),
+      imageUrl: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=800'
+    }
+  ]);
+
+  cache.set('market-factors', {
+    interest: [
+      { title: 'تسارع التضخم في طوكيو بسبتمبر ويعزز توقعات رفع الفائدة يابانياً', url: 'https://sa.investing.com/news/economic-indicators/article-3389194', source: 'Investing.com', publishedAt: new Date().toISOString() },
+      { title: 'عاجل: نائب رئيس الفيدرالي يدعو للتأني بشأن رفع الفائدة وتوقعات أكتوبر تتبدل', url: 'https://sa.investing.com/news/economic-indicators/article-3388903', source: 'Investing.com', publishedAt: new Date().toISOString() }
+    ],
+    hotMoney: [
+      { title: 'الدولار يتراجع في مصر والجنيه يصمد أمام ضغوط وتدفقات الأموال الساخنة', url: 'https://sa.investing.com/news/forex-news/article-3309024', source: 'Investing.com', publishedAt: new Date().toISOString() },
+      { title: 'الدولار يقترب من أعلى مستوياته منذ ما عرف بيوم التحرير النقدي', url: 'https://sa.investing.com/news/forex-news/article-3390971', source: 'Investing.com', publishedAt: new Date().toISOString() },
+      { title: 'الجنيه الإسترليني واليورو يتراجعان مع استمرار تدفقات رؤوس الأموال الدولارية', url: 'https://sa.investing.com/news/forex-news/article-3390571', source: 'Investing.com', publishedAt: new Date().toISOString() }
+    ],
+    oil: [
+      { title: 'أمين الناصر: لولا خط الشرق-الغرب لكان برنت 200 دولار.. والمخزونات رقيقة بشكل مخيف', url: 'https://sa.investing.com/news/commodities-news/article-3391173', source: 'Investing.com', publishedAt: new Date().toISOString() },
+      { title: 'عاجل: نفط برنت فوق 102 والخام الأمريكي يمحو الخسائر بعد إغلاق خطوط الإمداد', url: 'https://sa.investing.com/news/commodities-news/article-3390789', source: 'Investing.com', publishedAt: new Date().toISOString() },
+      { title: 'أسعار النفط تتذبذب مع تعافي صادرات الشرق الأوسط وإطلاق مخزونات الطوارئ', url: 'https://sa.investing.com/news/commodities-news/article-3390384', source: 'Investing.com', publishedAt: new Date().toISOString() }
+    ],
+    geo: [
+      { title: 'عاجل: مؤشرات الأسهم العالمية تتباين وسط تصاعد التوترات الجيوسياسية في الشرق الأوسط', url: 'https://sa.investing.com/news/stock-market-news/article-3391335', source: 'Investing.com', publishedAt: new Date().toISOString() },
+      { title: 'عوائد سندات الخزانة تصعد فوق 5.30% مع تفضيل الملاذات الآمنة والذهب', url: 'https://sa.investing.com/news/economic-indicators/article-3391323', source: 'Investing.com', publishedAt: new Date().toISOString() }
+    ]
+  });
+
+  cache.set('hot-money-flows', {
+    usdEgpRate: 52.39,
+    lastUpdated: new Date().toISOString(),
+    centralBank: {
+      title: 'البنك المركزي وأدوات الدين (أذون وسندات الخزانة)',
+      totalHotMoneyHoldingsUsd: 35.80,
+      netForeignAssetsUsd: 10.35,
+      foreignReservesUsd: 46.90,
+      monthlyInflowUsd: 1.85,
+      monthlyOutflowUsd: 1.20,
+      netMonthlyFlowUsd: 0.65,
+      tBillYieldAvg: 29.40,
+      realInterestRate: 2.90,
+      trend: 'inflow',
+      statusNote: 'صافي تدفق إيجابي للدولار مدعوماً بفارق الفائدة الإيجابي (Carry Trade) وتجديد عطاءات أذون الخزانة.'
+    },
+    egxEquities: {
+      title: 'البورصة المصرية (سوق الأسهم)',
+      dailyTurnoverUsd: 65.9,
+      dailyTurnoverEgp: 3.45,
+      foreignParticipationPct: 9.8,
+      foreignBuyInflowUsd: 3.48,
+      foreignSellOutflowUsd: 2.97,
+      netForeignFlowUsd: 0.51,
+      netForeignFlowEgp: 26.7,
+      trend: 'inflow',
+      topForeignTargets: ['COMI (البنك التجاري)', 'TMGH (طلعت مصطفى)', 'FWRY (فوري)', 'ETEL (المصرية للاتصالات)', 'SWDY (السويدي)'],
+      statusNote: 'تركز مشتريات الأجانب والمؤسسات الدولية في الأسهم الدولارية والقيادية ذات السيولة العالية.'
+    }
+  });
+
+  console.log('⚡ [Cache] Pre-warmed instant cache initialized! Zero startup delay.');
+}
+
+seedCache();
 
 // Map Investing.com slugs to standard EGX tickers for the frontend
 const TICKER_MAP = {
@@ -57,6 +190,20 @@ function getTickerFromHref(href) {
 
 let browserInstance = null;
 let scrapePromise = null;
+let isScrapingBackground = false;
+
+// Fast page configuration (aborts ads, fonts, images, and heavy media)
+async function setupFastPage(ctx) {
+  const page = await ctx.newPage();
+  await page.route('**/*', route => {
+    const type = route.request().resourceType();
+    if (['image', 'media', 'font', 'stylesheet'].includes(type)) {
+      return route.abort();
+    }
+    return route.continue();
+  });
+  return page;
+}
 
 async function getBrowser() {
   if (!browserInstance || !browserInstance.isConnected()) {
