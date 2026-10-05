@@ -7,10 +7,14 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "express-rate-limit": "^7.4.1",
     "node-cache": "^5.1.2",
+    "playwright": "^1.63.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "yahoo-finance2": "^2.11.3"
   }
 }

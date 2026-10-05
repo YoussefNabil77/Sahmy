@@ -4,6 +4,7 @@ import { IndexCard } from '../components/market/IndexCard';
 import { MarketChart } from '../components/market/MarketChart';
 import { SectorHeatmap } from '../components/market/SectorHeatmap';
 import { TopMovers } from '../components/market/TopMovers';
+import MostUndervalued from '../components/dashboard/MostUndervalued';
 import { NewsSection } from '../components/market/NewsSection';
 import { useIndices } from '../hooks/useMarketData';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -42,10 +43,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Top Movers */}
-      <section>
-        <h2 className="text-2xl font-bold mb-6">حركة الأسهم</h2>
-        <TopMovers />
+      {/* Movers & Undervalued */}
+      <section className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <h2 className="text-2xl font-bold mb-6">حركة الأسهم</h2>
+          <TopMovers />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-6 invisible">.</h2>
+          <MostUndervalued />
+        </div>
       </section>
 
       {/* News */}

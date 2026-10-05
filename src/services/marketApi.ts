@@ -18,6 +18,7 @@ import type {
   LiquidityDay,
   FinancialPeriod,
   SearchSuggestion,
+  UndervaluedStock,
 } from '../types';
 
 import {
@@ -111,6 +112,12 @@ export async function fetchTopLosers(): Promise<StockMover[]> {
 
 export async function fetchMostActive(): Promise<StockMover[]> {
   const { data } = await proxyFetch<StockMover[]>('/api/most-active', MOCK_MOST_ACTIVE);
+  return data;
+}
+
+export async function fetchUndervalued(): Promise<UndervaluedStock[]> {
+  // Use a fallback mock array if the server call fails
+  const { data } = await proxyFetch<UndervaluedStock[]>('/api/undervalued', []);
   return data;
 }
 

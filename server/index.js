@@ -150,6 +150,55 @@ app.get('/api/top-gainers', async (req, res) => {
   }
 });
 
+// ─── Undervalued Stocks (Based on P/E and P/B) ─────────────────────────────
+app.get('/api/undervalued', async (req, res) => {
+  const KEY = 'undervalued-stocks';
+  const cached = cache.get(KEY);
+  if (cached) return res.json(cached);
+
+  try {
+    const reqBody = {
+      filter: [
+        { left: 'exchange', operation: 'equal', right: 'EGX' },
+        { left: 'price_earnings_ttm', operation: 'nempty' },
+        { left: 'price_earnings_ttm', operation: 'greater', right: 0 }
+      ],
+      sort: { sortBy: 'price_earnings_ttm', sortOrder: 'asc' },
+      options: { lang: 'en' },
+      markets: ['egypt'],
+      symbols: { query: { types: [] }, tickers: [] },
+      columns: ['name', 'description', 'close', 'change', 'price_earnings_ttm', 'price_book_ratio', 'dividend_yield_recent', 'volume']
+    };
+
+    const tvRes = await fetch('https://scanner.tradingview.com/egypt/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody)
+    });
+    
+    if (!tvRes.ok) throw new Error('TradingView API failed');
+    const json = await tvRes.json();
+    
+    const undervalued = json.data.slice(0, 15).map(item => ({
+      ticker: item.d[0],
+      companyName: item.d[1],
+      price: item.d[2],
+      changePct: item.d[3],
+      peRatio: item.d[4],
+      pbRatio: item.d[5],
+      yield: item.d[6],
+      volume: item.d[7],
+      reason: `مكرر ربحية منخفض (${item.d[4]?.toFixed(1)})`,
+      isReal: true
+    }));
+
+    cache.set(KEY, undervalued, 300); // 5 min cache
+    res.json(undervalued);
+  } catch (err) {
+    res.status(503).json({ error: err.message, fallbackToMock: true });
+  }
+});
+
 app.get('/api/top-losers', async (req, res) => {
   try {
     const data = await getMarketData();

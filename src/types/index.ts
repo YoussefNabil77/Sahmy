@@ -123,3 +123,16 @@ export interface SearchSuggestion {
   companyNameAr: string;
   sector: string;
 }
+
+export interface UndervaluedStock {
+  ticker: string;
+  companyName: string;
+  price: number;
+  changePct: number;
+  peRatio: number;
+  pbRatio: number;
+  yield: number | null;
+  volume: number;
+  reason: string;
+  isReal: boolean;
+}
