@@ -10,7 +10,7 @@ export function GrowthSection({ ticker }: { ticker: string }) {
   const { data, isLoading } = useFinancials(ticker, type);
 
   return (
-    <Card>
+    <Card glass>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-bold">الأداء المالي</h3>

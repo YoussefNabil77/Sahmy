@@ -10,7 +10,7 @@ function MoverList({ title, data, type }: { title: string, data?: StockMover[], 
   if (!data) return <Skeleton className="h-64 w-full" />;
   
   return (
-    <Card>
+    <Card glass>
       <h3 className="text-lg font-bold mb-4">{title}</h3>
       <div className="divide-y" style={{ borderColor: 'rgb(var(--surface-border))' }}>
         {data.map(stock => (
@@ -24,7 +24,7 @@ function MoverList({ title, data, type }: { title: string, data?: StockMover[], 
               {type === 'active' ? (
                 <div className="text-xs text-slate-500">{formatCompact(stock.volume)} سهم</div>
               ) : (
-                <div className={`text-sm font-bold ${stock.changePct >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                <div className={`text-sm font-bold ${stock.changePct >= 0 ? 'text-indigo-500' : 'text-red-500'}`}>
                   {formatPercent(stock.changePct)}
                 </div>
               )}

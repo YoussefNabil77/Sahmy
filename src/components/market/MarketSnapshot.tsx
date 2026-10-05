@@ -10,11 +10,11 @@ export function MarketSnapshot() {
   if (!egx30) return null;
 
   return (
-    <Card className="flex flex-col md:flex-row gap-6 justify-between items-center bg-gradient-to-l from-emerald-500/10 to-transparent">
+    <Card glass className="flex flex-col md:flex-row gap-6 justify-between items-center bg-gradient-to-l from-indigo-500/10 to-transparent">
       <div>
         <h2 className="text-sm font-medium mb-1" style={{ color: 'rgb(var(--text-secondary))' }}>حالة السوق</h2>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
           <span className="text-lg font-bold">مفتوح</span>
         </div>
       </div>
@@ -30,7 +30,7 @@ export function MarketSnapshot() {
       </div>
       <div className="flex gap-4 items-center">
         <div className="text-center">
-          <span className="block text-emerald-500 font-bold">{egx30.advancing}</span>
+          <span className="block text-indigo-500 font-bold">{egx30.advancing}</span>
           <span className="text-xs" style={{ color: 'rgb(var(--text-secondary))' }}>ارتفاع</span>
         </div>
         <div className="text-center">

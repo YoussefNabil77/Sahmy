@@ -1,3 +1,4 @@
+import { Card } from '../ui/Card';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { TrendingDown, HelpCircle, ArrowRight } from 'lucide-react';
@@ -13,21 +14,22 @@ export default function MostUndervalued() {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 animate-pulse h-[400px]">
-        <div className="h-6 w-48 bg-slate-200 rounded mb-6"></div>
+      <Card glass className="animate-pulse h-[400px]">
+        <div className="h-6 w-48 bg-slate-200/50 rounded mb-6"></div>
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="h-16 bg-slate-100 rounded-lg"></div>
+            <div key={i} className="h-16 bg-slate-100/50 rounded-xl"></div>
           ))}
         </div>
-      </div>
+      </Card>
     );
   }
 
   if (!undervalued || undervalued.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 relative overflow-hidden group">
+    <Card glass className="relative overflow-hidden group p-0 sm:p-0">
+      <div className="p-6">
       <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-indigo-50 to-transparent rounded-bl-full opacity-50" />
       
       <div className="flex items-center justify-between mb-6 relative">
@@ -94,6 +96,7 @@ export default function MostUndervalued() {
           </Link>
         ))}
       </div>
-    </div>
+      </div>
+    </Card>
   );
 }

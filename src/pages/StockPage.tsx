@@ -77,14 +77,14 @@ export default function StockPage() {
               onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="أدخل رمز السهم (مثال: COMI، HRHO، ETEL)"
-              className="w-full ps-10 pe-4 py-3 text-base rounded-xl border bg-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500/40 font-semibold"
+              className="w-full ps-10 pe-4 py-3 text-base rounded-xl border bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500/40 font-semibold"
               style={{ borderColor: 'rgb(var(--surface-border))', color: 'rgb(var(--text-primary))', backgroundColor: 'rgb(var(--surface-card))' }}
               aria-label="البحث عن سهم"
             />
           </div>
           <button
             onClick={handleSearch}
-            className="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition-colors flex items-center gap-2"
+            className="px-5 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold transition-colors flex items-center gap-2"
           >
             بحث <ChevronLeft size={16} />
           </button>
@@ -110,9 +110,9 @@ export default function StockPage() {
                     navigate(`/stock/${s.ticker}`);
                     setShowSuggestions(false);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-500/10 text-sm transition-colors text-start"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-500/10 text-sm transition-colors text-start"
                 >
-                  <span className="font-black text-emerald-500 w-16 shrink-0">{s.ticker}</span>
+                  <span className="font-black text-indigo-500 w-16 shrink-0">{s.ticker}</span>
                   <span className="flex-1" style={{ color: 'rgb(var(--text-primary))' }}>{s.companyNameAr}</span>
                   <span className="text-xs" style={{ color: 'rgb(var(--text-secondary))' }}>{s.sector}</span>
                 </button>
@@ -133,7 +133,7 @@ export default function StockPage() {
               <button
                 key={t}
                 onClick={() => { setInputValue(t); setActiveTicker(t); navigate(`/stock/${t}`); }}
-                className="px-4 py-2 text-sm font-bold rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
+                className="px-4 py-2 text-sm font-bold rounded-lg bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 transition-colors border border-indigo-500/20"
               >
                 {t}
               </button>
@@ -176,7 +176,7 @@ export default function StockPage() {
             <KpiCards quote={quote} />
 
             {/* Price chart */}
-            <Card>
+            <Card glass>
               <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
                 <h3 className="text-base font-bold" style={{ color: 'rgb(var(--text-primary))' }}>مخطط السعر</h3>
                 <div className="flex gap-1">
@@ -185,7 +185,7 @@ export default function StockPage() {
                       key={r.key}
                       onClick={() => setRange(r.key)}
                       className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                        range === r.key ? 'bg-emerald-500 text-white' : 'hover:bg-emerald-500/10'
+                        range === r.key ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-500/10'
                       }`}
                       style={{ color: range === r.key ? undefined : 'rgb(var(--text-secondary))' }}
                     >
@@ -203,7 +203,7 @@ export default function StockPage() {
               {/* Trend explanation */}
               <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: 'rgb(var(--surface-bg))' }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp size={14} className="text-emerald-500" />
+                  <TrendingUp size={14} className="text-indigo-500" />
                   <h4 className="text-sm font-bold" style={{ color: 'rgb(var(--text-primary))' }}>اتجاه السهم</h4>
                 </div>
                 <p className="text-sm leading-relaxed" style={{ color: 'rgb(var(--text-secondary))' }}>

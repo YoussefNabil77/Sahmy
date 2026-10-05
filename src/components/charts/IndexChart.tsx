@@ -18,27 +18,38 @@ export function IndexChart({ data }: { data: IndexHistoryPoint[] }) {
               <stop offset="95%" stopColor={color} stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#1e293b' : '#e2e8f0'} />
+          <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} />
           <XAxis 
             dataKey="date" 
             tickFormatter={(val) => new Date(val).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })} 
             stroke={theme === 'dark' ? '#475569' : '#94a3b8'}
-            tick={{ fontSize: 12, fill: theme === 'dark' ? '#94a3b8' : '#475569' }}
+            tick={{ fontSize: 12, fill: theme === 'dark' ? '#94a3b8' : '#64748b' }}
+            axisLine={false}
+            tickLine={false}
           />
           <YAxis 
             domain={['auto', 'auto']} 
             orientation="right"
             tickFormatter={(val) => formatNumber(val, 0)}
             stroke={theme === 'dark' ? '#475569' : '#94a3b8'}
-            tick={{ fontSize: 12, fill: theme === 'dark' ? '#94a3b8' : '#475569' }}
+            tick={{ fontSize: 12, fill: theme === 'dark' ? '#94a3b8' : '#64748b' }}
+            axisLine={false}
+            tickLine={false}
           />
           <Tooltip 
-            contentStyle={{ backgroundColor: 'rgb(var(--surface-card))', borderColor: 'rgb(var(--surface-border))', borderRadius: '0.5rem', direction: 'rtl' }}
-            itemStyle={{ color: 'rgb(var(--text-primary))' }}
+            contentStyle={{ 
+              backgroundColor: 'rgba(var(--surface-card), 0.8)', 
+              backdropFilter: 'blur(12px)',
+              borderColor: 'rgba(var(--surface-border), 0.5)', 
+              borderRadius: '1rem', 
+              direction: 'rtl',
+              boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)'
+            }}
+            itemStyle={{ color: 'rgb(var(--text-primary))', fontWeight: 'bold' }}
             formatter={(value: number) => [formatNumber(value), 'القيمة']}
             labelFormatter={(label) => new Date(label).toLocaleDateString('ar-EG')}
           />
-          <Area type="monotone" dataKey="value" stroke={color} fillOpacity={1} fill="url(#colorValue)" />
+          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
         </AreaChart>
       </ResponsiveContainer>
     </div>

@@ -21,7 +21,7 @@ export function StockHeader({ quote }: { quote: StockQuote }) {
           <span className="text-5xl font-black">{formatNumber(quote.price)}</span>
           <span className="text-lg font-medium" style={{ color: 'rgb(var(--text-secondary))' }}>ج.م</span>
         </div>
-        <div className={`flex items-center justify-end gap-2 text-xl font-bold mt-2 ${isUp ? 'text-emerald-500' : 'text-red-500'}`}>
+        <div className={`flex items-center justify-end gap-2 text-xl font-bold mt-2 ${isUp ? 'text-indigo-500' : 'text-red-500'}`}>
           <span>{isUp ? '▲' : '▼'} {formatNumber(Math.abs(quote.change))}</span>
           <span>({formatPercent(quote.changePct)})</span>
         </div>

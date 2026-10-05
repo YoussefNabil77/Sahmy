@@ -11,7 +11,7 @@ export function SectorHeatmap() {
   if (!sectors) return null;
 
   return (
-    <Card>
+    <Card glass>
       <h3 className="text-lg font-bold mb-4">أداء القطاعات</h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {sectors.map(sector => {
@@ -27,7 +27,7 @@ export function SectorHeatmap() {
               }}
             >
               <span className="text-sm font-medium mb-2 truncate" title={sector.name}>{sector.name}</span>
-              <span className={`font-bold ${isUp ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
+              <span className={`font-bold ${isUp ? 'text-indigo-700 dark:text-indigo-400' : 'text-red-700 dark:text-red-400'}`}>
                 {formatPercent(sector.changePct)}
               </span>
             </div>

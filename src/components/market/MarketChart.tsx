@@ -11,7 +11,7 @@ export function MarketChart() {
   const { data, isLoading } = useIndexHistory(range);
 
   return (
-    <Card>
+    <Card glass>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-bold">أداء EGX30</h3>
         <div className="flex bg-[rgb(var(--surface-bg))] rounded-lg p-1">

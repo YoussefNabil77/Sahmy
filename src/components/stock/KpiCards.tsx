@@ -16,7 +16,7 @@ export function KpiCards({ quote }: { quote: StockQuote }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {kpis.map((kpi, i) => (
-        <Card key={i} className="p-4 text-center flex flex-col justify-center items-center">
+        <Card glass key={i} className="p-4 text-center flex flex-col justify-center items-center">
           <span className="text-xs mb-2" style={{ color: 'rgb(var(--text-secondary))' }}>{kpi.label}</span>
           <span className="text-lg font-bold">{kpi.value}</span>
         </Card>

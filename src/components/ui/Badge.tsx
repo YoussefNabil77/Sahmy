@@ -3,9 +3,9 @@ import { cn } from '../../lib/utils';
 
 export function Badge({ children, className, variant = 'default' }: { children: React.ReactNode, className?: string, variant?: 'default' | 'mock' | 'up' | 'down' }) {
   const variants = {
-    default: 'bg-emerald-500/10 text-emerald-500',
+    default: 'bg-indigo-500/10 text-indigo-500',
     mock: 'badge-mock',
-    up: 'bg-emerald-500/10 text-emerald-500',
+    up: 'bg-indigo-500/10 text-indigo-500',
     down: 'bg-red-500/10 text-red-500'
   };
   return (

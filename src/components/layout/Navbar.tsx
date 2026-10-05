@@ -43,11 +43,11 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 border-b" style={{ backgroundColor: 'rgb(var(--surface-card))', borderColor: 'rgb(var(--surface-border))' }}>
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
+    <nav className="sticky top-0 z-50 border-b card-glass rounded-none" style={{ borderColor: 'rgba(var(--surface-border), 0.5)' }}>
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
             <TrendingUp size={18} className="text-white" />
           </div>
           <span className="text-xl font-black" style={{ color: 'rgb(var(--text-primary))' }}>سهمي</span>
@@ -55,9 +55,9 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-1 me-4">
-          <Link to="/" className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-emerald-500/10 hover:text-emerald-500"
+          <Link to="/" className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-indigo-500/10 hover:text-indigo-500"
             style={{ color: 'rgb(var(--text-secondary))' }}>الرئيسية</Link>
-          <Link to="/stock/COMI" className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-emerald-500/10 hover:text-emerald-500"
+          <Link to="/stock/COMI" className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-indigo-500/10 hover:text-indigo-500"
             style={{ color: 'rgb(var(--text-secondary))' }}>تحليل الأسهم</Link>
         </div>
 
@@ -72,7 +72,7 @@ export default function Navbar() {
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
               placeholder="ابحث عن سهم..."
-              className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border bg-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
               style={{ borderColor: 'rgb(var(--surface-border))', color: 'rgb(var(--text-primary))' }}
             />
           </div>
@@ -83,9 +83,9 @@ export default function Navbar() {
                 <button
                   key={s.ticker}
                   onClick={() => handleSearch(s.ticker)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-emerald-500/10 text-sm transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-indigo-500/10 text-sm transition-colors"
                 >
-                  <span className="font-semibold text-emerald-500">{s.ticker}</span>
+                  <span className="font-semibold text-indigo-500">{s.ticker}</span>
                   <span style={{ color: 'rgb(var(--text-primary))' }}>{s.companyNameAr}</span>
                   <span className="text-xs" style={{ color: 'rgb(var(--text-secondary))' }}>{s.sector}</span>
                 </button>
@@ -99,7 +99,7 @@ export default function Navbar() {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg transition-colors hover:bg-emerald-500/10"
+          className="p-2 rounded-lg transition-colors hover:bg-indigo-500/10"
           aria-label="تبديل المظهر"
         >
           {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-500" />}
@@ -107,7 +107,7 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         <button
-          className="md:hidden p-2 rounded-lg transition-colors hover:bg-emerald-500/10"
+          className="md:hidden p-2 rounded-lg transition-colors hover:bg-indigo-500/10"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="القائمة"
         >

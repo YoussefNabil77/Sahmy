@@ -12,7 +12,7 @@ export function OwnershipSection({ ticker }: { ticker: string }) {
   if (!data || data.length === 0) return null;
 
   return (
-    <Card>
+    <Card glass>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-bold">هيكل الملكية</h3>
         {data[0]?.isMock && <Badge variant="mock">بيانات تجريبية</Badge>}

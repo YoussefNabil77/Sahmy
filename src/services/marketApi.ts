@@ -61,9 +61,78 @@ export async function fetchStockQuote(ticker: string): Promise<StockQuote | null
 export async function fetchUndervalued(): Promise<UndervaluedStock[]> { return []; }
 export async function fetchIndexHistory(range: string): Promise<IndexHistoryPoint[]> { return []; }
 export async function fetchSectors(): Promise<Sector[]> { return []; }
-export async function fetchNews(): Promise<NewsItem[]> { return []; }
+export async function fetchNews(): Promise<NewsItem[]> {
+  const data = await proxyFetch<NewsItem[]>('/api/news');
+  return data || [];
+}
 export async function fetchStockPriceHistory(ticker: string, range: string): Promise<PricePoint[]> { return []; }
 export async function fetchOwnership(ticker: string): Promise<OwnershipItem[]> { return []; }
 export async function fetchLiquidity(ticker: string): Promise<LiquidityDay[]> { return []; }
 export async function fetchFinancials(ticker: string, type: 'annual' | 'quarterly'): Promise<FinancialPeriod[]> { return []; }
 export async function fetchSearchSuggestions(query: string): Promise<SearchSuggestion[]> { return []; }
+
+// ─── Market Factors ────────────────────────────────────────────────────────────
+export interface FactorItem {
+  title: string;
+  url: string;
+  source: string;
+  publishedAt: string;
+}
+
+export interface MarketFactorsData {
+  interest: FactorItem[];
+  hotMoney: FactorItem[];
+  oil: FactorItem[];
+  geo: FactorItem[];
+}
+
+export async function fetchMarketFactors(): Promise<MarketFactorsData> {
+  const data = await proxyFetch<MarketFactorsData>('/api/market-factors');
+  return data ?? { interest: [], hotMoney: [], oil: [], geo: [] };
+}
+
+// ─── Hot Money & Dollar Flows ────────────────────────────────────────────────
+export interface CentralBankFlows {
+  title: string;
+  totalHotMoneyHoldingsUsd: number;
+  netForeignAssetsUsd: number;
+  foreignReservesUsd: number;
+  monthlyInflowUsd: number;
+  monthlyOutflowUsd: number;
+  netMonthlyFlowUsd: number;
+  tBillYieldAvg: number;
+  realInterestRate: number;
+  trend: 'inflow' | 'outflow' | 'neutral';
+  statusNote: string;
+}
+
+export interface EgxEquityFlows {
+  title: string;
+  dailyTurnoverUsd: number;
+  dailyTurnoverEgp: number;
+  foreignParticipationPct: number;
+  foreignBuyInflowUsd: number;
+  foreignSellOutflowUsd: number;
+  netForeignFlowUsd: number;
+  netForeignFlowEgp: number;
+  trend: 'inflow' | 'outflow' | 'neutral';
+  topForeignTargets: string[];
+  statusNote: string;
+}
+
+export interface HotMoneyFlows {
+  usdEgpRate: number;
+  lastUpdated: string;
+  centralBank: CentralBankFlows;
+  egxEquities: EgxEquityFlows;
+}
+
+export async function fetchHotMoneyFlows(): Promise<HotMoneyFlows | null> {
+  try {
+    const data = await proxyFetch<HotMoneyFlows>('/api/hot-money-flows');
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+

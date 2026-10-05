@@ -7,7 +7,7 @@ import { SparklineChart } from '../charts/SparklineChart';
 export function IndexCard({ index }: { index: IndexSnapshot }) {
   const isUp = index.change >= 0;
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card glass className="hover:shadow-lg transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-bold">{index.name}</h3>
